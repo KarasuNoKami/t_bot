@@ -47,11 +47,11 @@ DozoR Classic (dzr)')
 
 	def read(text)
 		case text
-			when /\/start/
+			when /^\/start/
 				@parse_mode = true
 				send('sticker', 'img/lodka.png')
 
-			when /\/stop_baka/
+			when /^\/stop_baka/
 				@chat_id = ''
 				@auth_data = ''
 				@prefiks = ''
@@ -59,7 +59,7 @@ DozoR Classic (dzr)')
 				@type_mode = false
 				@auth_status = false
 
-			when /\/help/
+			when /^\/help/
 				send('text', 'Я понимаю следующие команды:
 
 /start - Поехали
@@ -91,16 +91,16 @@ DozoR Classic (dzr)')
 
 		if @parse_mode
 			case text
-				when /\/type_start|\/tstart/
+				when /^\/type_start|^\/tstart/
 			 		@type_mode = true
 					send('sticker', 'img/type_start.png')
 					send('text', 'Но капитан, вы еще не зарегистрированы') if !@auth_status
 
-				when /\/type_stop|\/tstop/
+				when /^\/type_stop|^\/tstop/
 					@type_mode = false
 					send('sticker', 'img/type_stop.png')
 
-				when /\/auth_baka/
+				when /^\/auth_baka/
 					if !@auth_status
 						@auth_data = text.split(' ')
 						result_of_auth = authorization(@auth_data)
@@ -112,10 +112,10 @@ DozoR Classic (dzr)')
 						send('text', 'Вы уже зарегестрировались')
 					end
 
-				when /\/logout_baka/
+				when /^\/logout_baka/
 					send('text', logout(@auth_data))
 
-				when /\/prefiks_on|\/pon/
+				when /^\/prefiks_on|^\/pon/
 					if @prefiks != ''
 						if text.split(' ')[1] == nil
 							send('text', 'Необходимо указать префикс')
@@ -126,7 +126,7 @@ DozoR Classic (dzr)')
 						end
 					end
 
-				when /\/prefiks_off|\/poff/
+				when /^\/prefiks_off|^\/poff/
 					if !@prefiks_mode
 						send('text', 'Но он и так выключен, капитан')
 					else
@@ -135,10 +135,10 @@ DozoR Classic (dzr)')
 						send('text', 'Режим префикса выключен, капитан')
 					end
 
-				when /\/fast_link|\/fl/
+				when /^\/fast_link|^\/fl/
 					@auth_status ? send('text', get_fast_link()) : send('text', 'Я еще не авторизирован на движке')
 
-				when /\/ko/
+				when /^\/ko/
 					@auth_status ? ko() : send('text', 'Сначала необходимо авторизироваться')
 					
 			end # конец проверки сообщений в режиме parse_mode
@@ -200,8 +200,8 @@ DozoR Classic (dzr)')
 			begin
 				@page = @@agent.add_auth(@link, data[1], data[2])
 			rescue Mechanize::UnauthorizedError => error
-				 @page = error
-				 return 'Не выходится'
+				@page = error
+				return 'Не выходится'
 			end
 
 			@page = @@agent.add_auth(@link, data[1], data[2])
@@ -237,9 +237,6 @@ DozoR Classic (dzr)')
 
 			when /\sВыполняйте следующее задание./
 				return "#{text} Код принят. Новое задание!"
-
-			when /Вам не запланировано/
-				return "#{text} Код принят. Задание закрыто #ВладзвониДане"
 
 			when /Вы нашли все основные коды/
 				return "#{text} Код принят. Вы нашли все основные коды"
@@ -279,61 +276,66 @@ DozoR Classic (dzr)')
 		html = Nokogiri::HTML(html.body)
 		html.encoding = 'utf-8'
 
-		ko = html.css('.zad')[0].to_s.split('Коды сложности</strong>')[1].gsub(/<br>/, '
+		if html.body.to_s.include?('Вам не запланировано')
+			send('text', 'Вам не запланировано, капитан')
+		else
+
+			ko = html.css('.zad')[0].to_s.split('Коды сложности</strong>')[1].gsub(/<br>/, '
 ').gsub(/<span style="color:red">|<\/div>/, '').gsub('</span>', '#').gsub('#', ' ✔').gsub('бонусные', 'Бонусные').gsub(' основ', 'Основ').strip
-		
-		send('code', "<pre>#{ko}</pre>")
-		
-		hint_text = html.css('body').to_s.split('Последние три события игры команды')[0]
-		time = hint_text.split('Время на уровне: ')[1].split(' (на моме')[0]
-		if hint_text.include?('Подсказка l')
-			send('code', '<b>Первая подсказка выдана!</b>')
-			if hint_text.include?('Подсказка 2')
-				send('code', '<b>Вторая подсказка выдана!</b>')
+			
+			send('code', "<pre>#{ko}</pre>")
+			
+			hint_text = html.css('body').to_s.split('Последние три события игры команды')[0]
+			time = hint_text.split('Время на уровне: ')[1].split(' (на моме')[0]
+			if hint_text.include?('Подсказка l')
+				send('code', '<b>Первая подсказка выдана!</b>')
+				if hint_text.include?('Подсказка 2')
+					send('code', '<b>Вторая подсказка выдана!</b>')
+				end
 			end
+			send('text', "Мы на уровне уже #{time}")
 		end
-		send('text', "Мы на уровне уже #{time}")
 
 	end
 
 	def send(mode, text)
 
 		Telegram::Bot::Client.run(@token) do |bot|
-			bot.listen do |message|
+			
 
-				if mode == 'text'
-					bot.api.send_message(
-						chat_id: @chat_id,
-						text: text
-					)
+			if mode == 'text'
+				bot.api.send_message(
+					chat_id: @chat_id,
+					text: text
+				)
 
-				elsif mode == 'sticker'
-					bot.api.send_sticker(
-						chat_id: @chat_id,
-						sticker: Faraday::UploadIO.new(text, 'image/png')
-					)
+			elsif mode == 'sticker'
+				bot.api.send_sticker(
+					chat_id: @chat_id,
+					sticker: Faraday::UploadIO.new(text, 'image/png')
+				)
 
-				elsif mode == 'cord'
-					text = text.rstrip
-					text.include?(', ') ? text = text.split(', ') : text = text.split(' ')
-					
-					bot.api.send_location(
-						chat_id: @chat_id,
-						latitude: text[0].to_f,
-						longitude: text[1].to_f
-					)
-
-				elsif mode == 'code'
-					bot.api.send_message(
-						chat_id: @chat_id,
-						text: text,
-						parse_mode: 'HTML'
-					)
-
-				end
+			elsif mode == 'cord'
+				text = text.rstrip
+				text.include?(', ') ? text = text.split(', ') : text = text.split(' ')
 				
-				break 
+				bot.api.send_location(
+					chat_id: @chat_id,
+					latitude: text[0].to_f,
+					longitude: text[1].to_f
+				)
+
+			elsif mode == 'code'
+				bot.api.send_message(
+					chat_id: @chat_id,
+					text: text,
+					parse_mode: 'HTML'
+				)
+
 			end
+			
+			break 
+			
 		end # Конец цикла телеграма
 
 	end

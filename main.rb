@@ -11,7 +11,7 @@ Telegram::Bot::Client.run(TOKEN) do |bot|
 
 			case message.text
 
-				when /\/game/
+				when /^\/game/
 
 					case message.text.split(' ')[1]
 
@@ -27,7 +27,7 @@ Telegram::Bot::Client.run(TOKEN) do |bot|
 
 					end
 
-				when /\/help/
+				when /^\/help/
 					bot.api.send_message(
 								chat_id: message.chat.id,
 								text: 'Для выбора игры введите /game "название игры". 
