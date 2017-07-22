@@ -108,7 +108,7 @@ class DozorClassic
 		page_body = page.at_css('body').text.to_s
 		
 		return 'Failed to load page after authorization' if page_body == nil
-		if page_body.include?('успешно') || page_body.include?('найдено кодов')
+		if page_body.include?('успешно') || page_body.include?('найдено кодов') || page_body.include?('Приветствуем участников')
 			@auth_status = true
 			return 'Authorization success'
 		elsif page_body.include?('Авторизуйтесь')
@@ -166,11 +166,11 @@ class DozorClassic
 
 	def check_page
 		page = get_page
-		return page.text.include?('Вам не выдано') ? false : true
+		return page.text.include?('Вам не выдано') || page.text.include?('Ждем вас к началу') ? false : true
 	end
 
 	def ko
-		return 'Вам не выдано' if !check_page
+		return 'Вы не на уровне' if !check_page
 
 		page = get_page.to_s
 		page[-1..-3] = ''
