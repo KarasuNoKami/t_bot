@@ -118,8 +118,13 @@ class DozorClassic
 	end
 
 	def send_code(message)
-		(message =~ /^\./) == 0 ? message[0] = '' : message = message.downcase.gsub(/[Ддd]/, 'D').gsub(/[Ррr]/, 'R')
-		message = @prefix + message if @prefix_status
+		if (message =~ /^(\.|\?|#)/) == 0  
+			message[0] = ''
+		else 
+			message = message.downcase.gsub(/[Ддd]/, 'D').gsub(/[Ррr]/, 'R')
+			message = @prefix + message if @prefix_status
+		end
+		
 		page = @agent.get(@link)
 		return 'Вы не на уровне' if !check_page
 
