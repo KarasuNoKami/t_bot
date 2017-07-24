@@ -40,19 +40,22 @@ class Default
 			loop do
 				comment_agent = Mechanize.new
 				page = comment_agent.get(
-					'https://api.vk.com/method/board.getComments?group_id=13390519&topic_id=22733567&sort=desc'
+					'https://api.vk.com/method/board.getComments?group_id=13390519&topic_id=22733567&sort=desc&count=5'
 				)
 				page = Nokogiri::HTML(page.body)
 				json = JSON.parse(page.text)
-				comment = json['response']['comments'][1]
-				date = comment['date']
-
-				@chat_id = 211021342
-				if date > @comment_date.to_i
-					send('text', comment['text'])
-					send('text', "https://vk.com/#{comment['from_id']}")
-					@comment_date = date
+				comments = json['response']['comments']
+				
+				comments.reverse_each do |comment|
+					comment.is_a?(Hash) ? date = comment['date'] : next
+					@chat_id = 211021342
+					if date > @comment_date.to_i
+						send('text', comment['text'])
+						send('text', "https://vk.com/id#{comment['from_id']}")
+						@comment_date = date
+					end
 				end
+				
 
 				sleep 10
 			end
