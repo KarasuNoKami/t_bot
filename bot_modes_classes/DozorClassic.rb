@@ -62,10 +62,10 @@ class DozorClassic
 				end
 
 				case message.text
-					when /^\/fast_link|^\/fl/
+					when /^\/fast_link|^\/fs/
 						send('text', @auth_data[3] + ':' + @auth_data[4] + '@' + @link.split('//')[1])
 
-					when /(^(\.|#|\?))|(^[DdRrДдРр\d]{3})/
+					when /(^\.)|(^[DdRrДдРр\d]{3})/
 						send('text', send_code(message.text)) if @parse_status
 
 					when /^\/ko/
@@ -118,10 +118,10 @@ class DozorClassic
 	end
 
 	def send_code(message)
-		(message =~ /^(\.|\?|#)/) == 0 ? message[0] = '' : message = message.downcase.gsub(/[Ддd]/, 'D').gsub(/[Ррr]/, 'R')
+		(message =~ /^\./) == 0 ? message[0] = '' : message = message.downcase.gsub(/[Ддd]/, 'D').gsub(/[Ррr]/, 'R')
 		message = @prefix + message if @prefix_status
 		page = @agent.get(@link)
-		return 'Вам не выдано' if !check_page
+		return 'Вы не на уровне' if !check_page
 
 		code_form = page.form_with :name => 'codeform'
 		return 'cant find form' if code_form == nil
