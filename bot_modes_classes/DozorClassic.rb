@@ -4,10 +4,12 @@ class DozorClassic
 	@link
 	@prefix
 	@auth_data
+	@ind = 0
 
 	@auth_status = false
 	@parse_status = false
 	@prefix_status = false
+	@ko_god_mode = false
 
 	@agent
 
@@ -30,6 +32,14 @@ class DozorClassic
 							break
 						end
 						send('code', authorization)
+
+					when /^(\/ko_god_mode_on|\/kgmon)/
+						@ko_god_mode = true
+						send('code', 'ko_god_mode id on HOLY SHIT')
+
+					when /^(\/ko_god_mode_off|\/kgmoff)/
+						@ko_god_mode = false
+						send('code', 'ko_god_mode id off')
 
 					when /^\/(pon|parse_on)/
 						@parse_status = true
@@ -69,7 +79,8 @@ class DozorClassic
 						send('text', send_code(message.text)) if @parse_status
 
 					when /^\/ko/
-						send('pre', ko)
+						send('pre', ko) if !@ko_god_mode
+						send('kogm', ko) if @ko_god_mode
 				end if @auth_status
 
 			end
@@ -175,20 +186,65 @@ class DozorClassic
 	end
 
 	def ko
-		return 'Вы не на уровне' if !check_page
+		if !@ko_god_mode
+			return 'Вы не на уровне' if !check_page
 
-		page = get_page.to_s
-		page[-1..-3] = ''
-		page = page
-			.split('Коды сложности</strong><br>')[1]
-			.split('</div>')[0]
-			.gsub('</span>', ' ✔')
-			.gsub('<span style="color:red">', '')
-			.gsub('<br>', "\n")
-			.gsub(' бонус', 'Бонус')
-			.gsub(' основн', 'Основн')
+			page = get_page.to_s
+			page[-1..-3] = ''
+			page = page
+				.split('Коды сложности</strong><br>')[1]
+				.split('</div>')[0]
+				.gsub('</span>', ' ✔')
+				.gsub('<span style="color:red">', '')
+				.gsub('<br>', "\n")
+				.gsub(' бонус', 'Бонус')
+				.gsub(' основн', 'Основн')
 
-		return page
+			return page
+		else
+			return 'Вы не на уровне' if !check_page
+			page = get_page.to_s
+			page[-1..-3] = ''
+			codes = page
+				.split('Коды сложности</strong><br>')[1]
+				.split('</div>')[0]
+				.gsub('<span style="color:red">', '')
+				.gsub(',', '')
+				.split('<br>').map {|el|
+					@ind = 0
+					el.split(': ').map {|el|
+						if (/^\d/ =~ el) == 0
+							el.split(' ').map {|el|
+								@ind += 1
+								el = el.gsub('</span>', ' √')
+								el = @ind.to_s + ') ' + el 
+								if @ind % 2 == 0
+									@el = el + " \n"
+								else
+									@el = el
+									if @ind < 9
+										(18 - el.length).times {|el| @el = @el + ' '}
+									elsif @ind >= 9 && @ind < 99
+										if @ind % 3 == 2
+											(17 - el.length).times {|el| @el = @el + ' '}
+										else
+											(17 - el.length).times {|el| @el = @el + ' '}
+										end
+									else
+										(16 - el.length).times {|el| @el = @el + ' '}
+									end
+								end
+								@el						
+							}
+						else
+							el
+						end
+					}.join("").gsub(/основн/, "Основн")
+										.gsub(/бонусн/, "Бонусн")
+										.gsub(/коды/, "коды\n")
+				}
+			return codes.first codes.size - 1 # some ruby magic oO
+		end
 	end
 
 end
