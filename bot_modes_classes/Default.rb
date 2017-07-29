@@ -1,8 +1,6 @@
 class Default
 	include BotApi
 
-	@comment_date = 0
-
 	def turn_on
 		threads = []
 
@@ -13,20 +11,20 @@ class Default
 					@chat_id = message.chat.id
 
 					case message.text
-						when /^\/help/
+						when %r{^/help}
 							send('text', 'For chosing game send /game ...')
 
-						when /^\/game/
+						when %r{^/game}
 							case
 								when /dzr/
-									send('code', 'Game DozoR Classic')
+									send('html', 'Game DozoR Classic')
 									@game = DozorClassic.new
 									@game.turn_on
 									
 							end
 
 						when /\d+\.\d+(\,\s+|\s+)\d+\.\d+/
-							send('pre', message.text)
+							send('html', message.text, 'pre')
 							send('cord', message.text[/\d+\.\d+(\,\s+|\s+)\d+\.\d+/])
 					end
 
@@ -37,6 +35,7 @@ class Default
 
 		# inform me if someone write in dozor vk group that he\she wants to play dozor
 		threads << Thread.new do
+			puts @comment_date
 			loop do
 				comment_agent = Mechanize.new
 				page = comment_agent.get(

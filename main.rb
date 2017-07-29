@@ -3,9 +3,9 @@ require 'nokogiri'
 require 'mechanize'
 require 'json'
 
-load 'modules/BotApi.rb'
-load 'bot_modes_classes/Default.rb'
-load 'bot_modes_classes/DozorClassic.rb'
+load 'modules/bot_api.rb'
+load 'bot_modes_classes/default.rb'
+load 'bot_modes_classes/dozor_classic.rb'
 
 bot = Default.new
 bot.turn_on
