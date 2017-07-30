@@ -63,7 +63,7 @@ class DozorClassic
 				when %r{^/fast_link|/fl}
 					send('text', @auth_data[3] + ':' + @auth_data[4] + '@' + @link.split('//')[1])
 
-				when /(^\.)|(^[DdRrДдРр\d]{3})/
+				when /(^(\.|\?|#))|(^[DdRrДдРр\d]{3})/
 					send('text', send_code(message.text)) if @parse_status
 
 				when %r{^/ko}
@@ -173,11 +173,12 @@ class DozorClassic
 			false
 		else
 			true
+		end
 	end
 
 	def ko
     return 'Вы не на уровне' unless check_page
-    text = get_page(@link).text.to_s
+    text = get_page.to_s
       .split('Коды сложности</strong><br>')[1]
       .split('</div>')[0]
       .gsub('</span>', ' √')
@@ -187,7 +188,7 @@ class DozorClassic
     unless @ko_god_mode
       text = text.split('<br>')
     else
-      numerable_codes(text)
+      text = numerable_codes(text)
     end
     return text.first text.size - 1 # some ruby magic oO
   end
@@ -220,9 +221,14 @@ class DozorClassic
         end
       }.join('')
        .gsub('Основные', "Основные коды\n")
-       .gsub('бонусные', "Бонусные коды\n")
+       .gsub('Бонусные', "Бонусные коды\n")
        .gsub(' 1) ', '1) ')
     }
+  end
+
+  def add_space(text, num)
+  	num.times { text += ' '}
+  	text
   end
 
 end

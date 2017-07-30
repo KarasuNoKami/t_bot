@@ -35,7 +35,6 @@ class Default
 
 		# inform me if someone write in dozor vk group that he\she wants to play dozor
 		threads << Thread.new do
-			puts @comment_date
 			loop do
 				comment_agent = Mechanize.new
 				page = comment_agent.get(
