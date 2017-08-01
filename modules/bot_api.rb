@@ -1,12 +1,12 @@
 module BotApi
-		
-	TOKEN = ''.freeze
-	DOZOR_HELP = "Я понимаю следующие команды:\n\n"\
+    
+  TOKEN = ''.freeze
+  DOZOR_HELP = "Я понимаю следующие команды:\n\n"\
     "/parse_on (/pon) - Включить режим парсинга\n"\
     "/parse_off (/poff) - Выключить режим парсинга\n"\
     "/ko - Отправляю в чат ситуацию по кодикам\n"\
-    "/prefiks_on \"число\" - Перед вашими кодиками ставлю указанный префикс\n"\
-    "/prefiks_off - А теперь не ставлю\n"\
+    "/prefix_on \"число\" - Перед вашими кодиками ставлю указанный префикс\n"\
+    "/prefix_off - А теперь не ставлю\n"\
     "/fast_link (/fl) - Отсылаю быструю ссылку на движок\n"\
     "/ko_god_mode_on (/kgmon) - Кодики парсятся с нумерацией\n"\
     "/ko_god_mode_off (/kgmoff) - А теперь нет\n"\
@@ -18,7 +18,7 @@ module BotApi
     ' запятой, так и без, в середине \ начале \ конце текста'\
     "\nБот постоянно развивается. По всем попросам @karasunokami".freeze
 
-	def send(mode, text, html = 'code')
+  def send(mode, text, html = 'code')
     Telegram::Bot::Client.run(TOKEN) do |bot|
       case mode
       when 'text'
@@ -51,6 +51,12 @@ module BotApi
       break
     end
   end
-	
+
+  def get_page(link)
+    page = @agent.get(link)
+    page = Nokogiri::HTML(page.body)
+    page.encoding = 'utf-8'
+    page
+  end
 end
 

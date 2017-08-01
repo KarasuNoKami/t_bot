@@ -1,7 +1,7 @@
-require 'telegram/bot'
+require 'json'
 require 'nokogiri'
 require 'mechanize'
-require 'json'
+require 'telegram/bot'
 
 load 'modules/bot_api.rb'
 load 'bot_modes_classes/default.rb'

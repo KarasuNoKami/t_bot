@@ -1,184 +1,194 @@
+# telegram bot Dozor Classic game class 
 class DozorClassic
-	include BotApi
+  include BotApi
 
-	def turn_on
-		Telegram::Bot::Client.run(TOKEN) do |bot|
-			bot.listen do |message|
-				@chat_id = message.chat.id
-				case message.text
-				when %r{^/change_game}
-					send('html', 'Exit DozoR Classic game')
-					return
+  def initialize
+    
+    @agent = Mechanize.new
+  end
 
-				when %r{^/help}
-					send('text', DOZOR_HELP)
+  def turn_on
+    Telegram::Bot::Client.run(TOKEN) do |bot|
+      bot.listen do |message|
+        @chat_id = message.chat.id
+        case message.text
+        when %r{^/change_game}
+          send('html', 'Exit DozoR Classic game')
+          return
+        end
+        process_messages(message)
+        process_auth_messages(message) if @auth_status
+      end
+    end
+  end
 
-				when %r{^/auth}
-					@auth_data = message.text.split(' ')
-					if (!@auth_data[4])
-						send('text', 'Enter you login password pin pass')
-						break
-					end
-					send('html', authorization)
+  def process_messages(message)
+    case message.text
+    when %r{^/help}
+      send('text', DOZOR_HELP)
 
-				when %r{^(/ko_god_mode_on|/kgmon)}
-					@ko_god_mode = true
-					send('html', 'ko_god_mode id on HOLY SHIT')
+    when %r{^/auth}
+      @auth_data = message.text.split(' ')
+      unless (@auth_data[4])
+        send('text', 'Enter you login password pin pass')
+      else
+        send('html', authorization)
+      end
 
-				when %r{^(/ko_god_mode_off|/kgmoff)}
-					@ko_god_mode = false
-					send('html', 'ko_god_mode id off')
+    when %r{^(/ko_god_mode_on|/kgmon)}
+      @ko_god_mode = true
+      send('html', 'ko_god_mode id on HOLY SHIT')
 
-				when %r{^/(pon|parse_on)}
-					@parse_status = true
-					send('html', 'parse is on')
+    when %r{^(/ko_god_mode_off|/kgmoff)}
+      @ko_god_mode = false
+      send('html', 'ko_god_mode id off')
 
-				when %r{^/(poff|parse_off)}
-					@parse_status = false
-					send('html', 'parse is off')
+    when %r{^/(pon|parse_on)}
+      @parse_status = true
+      send('html', 'parse is on')
 
-				when %r{^/prefix_on}
-					@prefix = message.text.split(' ')[1]
-					@prefix_status = true
-					send('html', "prefix #{@prefix} is on")
+    when %r{^/(poff|parse_off)}
+      @parse_status = false
+      send('html', 'parse is off')
 
-				when %r{^/prefix_off}
-					@prefix_status = false
-					send('html', "prefix #{@prefix} is off")
+    when %r{^/prefix_on}
+      @prefix = message.text.split(' ')[1]
+      @prefix_status = true
+      send('html', "prefix #{@prefix} is on")
 
-				when /\d+\.\d+(\,\s+|\s+)\d+\.\d+/
-					send('html', message.text, 'pre')
-					send('cord', message.text[/\d+\.\d+(\,\s+|\s+)\d+\.\d+/])
+    when %r{^/prefix_off}
+      @prefix_status = false
+      send('html', "prefix #{@prefix} is off")
 
-				#fun commands below
+    when /\d+\.\d+(\,\s+|\s+)\d+\.\d+/
+      send('html', message.text, 'pre')
+      send('cord', message.text[/\d+\.\d+(\,\s+|\s+)\d+\.\d+/])
 
-				when /(Бот|бот) мудак/
-					send('sticker', 'img/mudak.png')
+    #fun commands below
+    when /(Бот|бот) мудак/
+      send('sticker', 'img/mudak.png')
 
-				when %r{^/shrug}
-					send('text', "¯\\_(ツ)_/¯") 
-				end
+    when %r{^/shrug}
+      send('text', "¯\\_(ツ)_/¯") 
+    end
+  end
 
-				case message.text
-				when %r{^/fast_link|/fl}
-					send('text', @auth_data[3] + ':' + @auth_data[4] + '@' + @link.split('//')[1])
+  def process_auth_messages(message)
+    case message.text
+    when %r{^/fast_link|/fl}
+      send('text', @auth_data[3] + ':' + @auth_data[4] + '@' + @link.split('//')[1])
 
-				when /(^(\.|\?|#))|(^[DdRrДдРр\d]{3})/
-					send('text', send_code(message.text)) if @parse_status
+    when /(^(\.|\?|#))|(^[DdRrДдРр\d]{3})/
+      send('text', send_code(message.text)) if @parse_status
 
-				when %r{^/ko}
-					ko.each { |e| send('html', e, 'pre') }
-				end if @auth_status
+    when %r{^/ko}
+      ko.is_a?(String) ? send('html', ko) : ko.each { |e| send('html', e, 'pre') }
+    end 
+  end
 
-			end
-		end
-	end
+  def authorization
+    city = @auth_data[3].split('_')[0]
+    @link = "http://classic.dzzzr.ru/#{city}/go"
 
-	def authorization
-		@agent = Mechanize.new
-		city = @auth_data[3].split('_')[0]
-		@link = "http://classic.dzzzr.ru/#{city}/go"
+    begin
+      page = @agent.add_auth("#{@link}", @auth_data[3], @auth_data[4])
+      page = @agent.get(@link)
+      page = @agent.get(@link)
+      logout_button = @agent.page.links.find {|l| l.text == 'выход'}
+      logout_button.click if logout_button
+      html = Nokogiri::HTML(page.body)
+      html.encoding = 'utf-8'
+      page_body = html.at_css('body').text.to_s
+    rescue => error
+      return 'Authorization failed ' + error
+    end
+    return 'Вы не заявлены ни в одной из игр' if page_body.include?('не заявлены')
 
-		begin
-			page = @agent.add_auth("#{@link}", @auth_data[3], @auth_data[4])
-			page = @agent.get(@link)
-		rescue => error
-			return 'Authorization failed'
-		end
+    form = page.forms.first
+    if form
+      form.login = @auth_data[1]
+      form.password = @auth_data[2]
+      @agent.submit(form)
+    end
+    
+    page = get_page(@link)
+    page_body = page.at_css('body').text.to_s
+    return 'Failed to load page after authorization' unless page_body
+    process_auth_result(page_body)
+  end
 
-		page = @agent.get(@link)
-		logout_button = @agent.page.links.find {|l| l.text == 'выход'}
-		logout_button.click if logout_button
+  def process_auth_result(result)
+    if result.include?('успешно') ||
+       result.include?('найдено кодов') ||
+       result.include?('Приветствуем участников') 
+      @auth_status = true
+      return 'Authorization success'
+    elsif result.include?('Авторизуйтесь')
+      return 'HTTP authorization success, login failed'
+    else
+      return 'Something unknown happend'
+    end
+  end
 
-		html = Nokogiri::HTML(page.body)
-		html.encoding = 'utf-8'
-		page_body = html.at_css('body').text.to_s
-		return 'Вы не заявлены ни в одной из игр' if page_body.include?('не заявлены')
+  def send_code(message)
+    if /^(\.|\?|#)/.match(message)
+      message[0] = ''
+    else 
+      message = message.downcase.gsub(/[Ддd]/, 'D').gsub(/[Ррr]/, 'R')
+      message = @prefix + message if @prefix_status
+    end
+    
+    page = @agent.get(@link)
+    return 'Вы не на уровне' unless is_page?
 
-		form = page.forms.first
-		if form
-			form.login = @auth_data[1]
-			form.password = @auth_data[2]
-			@agent.submit(form)
-		end
-		
-		page = get_page
-		page_body = page.at_css('body').text.to_s
-		
-		return 'Failed to load page after authorization' if page_body == nil
-		if page_body.include?('успешно') || page_body.include?('найдено кодов') || page_body.include?('Приветствуем участников')
-			@auth_status = true
-			return 'Authorization success'
-		elsif page_body.include?('Авторизуйтесь')
-			return 'HTTP authorization success, login failed'
-		end
-		return 'Something unknown happend'
-	end
+    code_form = page.form_with :name => 'codeform'
+    return 'cant find form' unless code_form
 
-	def send_code(message)
-		if (message =~ /^(\.|\?|#)/) == 0  
-			message[0] = ''
-		else 
-			message = message.downcase.gsub(/[Ддd]/, 'D').gsub(/[Ррr]/, 'R')
-			message = @prefix + message if @prefix_status
-		end
-		
-		page = @agent.get(@link)
-		return 'Вы не на уровне' if !check_page
+    code_form.field_with(:name=>'cod').value = message
+    page = @agent.submit code_form
+    page = Nokogiri::HTML(page.body)
+    page.encoding = 'utf-8'
+    result = page.at_css('.sysmsg').text
+    return process_send_code_result(message, result) if result
+  end
 
-		code_form = page.form_with :name => 'codeform'
-		return 'cant find form' if code_form == nil
+  def process_send_code_result(message, result)
+    case result
+    when /\sВыполняйте следующее задание./
+      return "#{message} Код принят. Новое задание!"
 
-		code_form.field_with(:name=>'cod').value = message
-		page = @agent.submit code_form
-		page = Nokogiri::HTML(page.body)
-		page.encoding = 'utf-8'
+    when /Вы нашли все основные коды/
+      return "#{message} Код принят. Вы нашли все основные коды"
 
-		case page.at_css('.sysmsg').text
-			when /\sВыполняйте следующее задание./
-				return "#{message} Код принят. Новое задание!"
+    when /ложный код/
+      return "#{message} Это ложный код"
 
-			when /Вы нашли все основные коды/
-				return "#{message} Код принят. Вы нашли все основные коды"
+    when /Код не принят.\sВы пытаетесь повторно | уже ввели/
+      return "#{message} Вы уже ввели этот код"
 
-			when /ложный код/
-				return "#{message} Это ложный код"
+    when /Принят бонусный код/
+      return "#{message} Принят бонусный код"
 
-			when /Код не принят.\sВы пытаетесь повторно | уже ввели/
-				return "#{message} Вы уже ввели этот код"
+    when /Код принят/
+      return "#{message} Код принят"
 
-			when /Принят бонусный код/
-				return "#{message} Принят бонусный код"
+    else
+      return "#{message} Код не принят"
+    end
+  end
 
-			when /Код принят/
-				return "#{message} Код принят"
+  def is_page?
+    page = get_page(@link)
+    if page.text.include?('Вам не выдано') || page.text.include?('Ждем вас к на')
+      false
+    else
+      true
+    end
+  end
 
-			else
-				return "#{message} Код не принят"
-		end
-
-		return message
-	end
-
-	def get_page
-		page = @agent.get(@link)
-		page = Nokogiri::HTML(page.body)
-		page.encoding = 'utf-8'
-		page
-	end
-
-	def check_page
-		page = get_page
-		if page.text.include?('Вам не выдано') || page.text.include?('Ждем вас к на')
-			false
-		else
-			true
-		end
-	end
-
-	def ko
-    return 'Вы не на уровне' unless check_page
-    text = get_page.to_s
+  def ko
+    return 'Вы не на уровне' unless is_page?
+    text = get_page(@link).to_s
       .split('Коды сложности</strong><br>')[1]
       .split('</div>')[0]
       .gsub('</span>', ' √')
@@ -227,8 +237,7 @@ class DozorClassic
   end
 
   def add_space(text, num)
-  	num.times { text += ' '}
-  	text
+    num.times { text += ' '}
+    text
   end
-
 end
