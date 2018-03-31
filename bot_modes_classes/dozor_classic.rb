@@ -5,6 +5,7 @@ class DozorClassic
   def initialize
     
     @agent = Mechanize.new
+    @ko_god_mode = true
   end
 
   def turn_on
@@ -37,7 +38,7 @@ class DozorClassic
 
     when %r{^(/ko_god_mode_on|/kgmon)}
       @ko_god_mode = true
-      send('html', 'ko_god_mode id on HOLY SHIT')
+      send('html', 'ko_god_mode is on HOLY SHIT')
 
     when %r{^(/ko_god_mode_off|/kgmoff)}
       @ko_god_mode = false
@@ -70,6 +71,9 @@ class DozorClassic
 
     when %r{^/shrug}
       send('text', "¯\\_(ツ)_/¯") 
+
+    when %r{^/die}
+      exit 
     end
   end
 
@@ -104,7 +108,7 @@ class DozorClassic
     end
     return 'Вы не заявлены ни в одной из игр' if page_body.include?('не заявлены')
 
-    form = page.forms.first
+    form = page.forms.last
     if form
       form.login = @auth_data[1]
       form.password = @auth_data[2]
@@ -154,26 +158,29 @@ class DozorClassic
 
   def process_send_code_result(message, result)
     case result
+    when /\sКод к спойлеру принят/
+      return "#{message} \u{1F535} Код от спойлера принят!"
+
     when /\sВыполняйте следующее задание./
-      return "#{message} Код принят. Новое задание!"
+      return "#{message} \u{1F535} Код принят. Новое задание!"
 
     when /Вы нашли все основные коды/
-      return "#{message} Код принят. Вы нашли все основные коды"
+      return "#{message} \u{1F535} Код принят. Вы нашли все основные коды"
 
     when /ложный код/
-      return "#{message} Это ложный код"
+      return "#{message} \u{1F534} Это ложный код"
 
     when /Код не принят.\sВы пытаетесь повторно | уже ввели/
-      return "#{message} Вы уже ввели этот код"
+      return "#{message} Вы уже ввели этот код. Поставь метку полевик!"
 
     when /Принят бонусный код/
-      return "#{message} Принят бонусный код"
+      return "#{message} \u{1F535} Принят бонусный код"
 
     when /Код принят/
-      return "#{message} Код принят"
+      return "#{message} \u{1F535} Код принят"
 
     else
-      return "#{message} Код не принят"
+      return "#{message} \u{1F534} Код не принят"
     end
   end
 
@@ -193,8 +200,8 @@ class DozorClassic
       .split('</div>')[0]
       .gsub('</span>', ' √')
       .gsub('<span style="color:red">', '')
-      .gsub(' бонус', ' Бонус')
-      .gsub(' основн', ' Основн')
+      .gsub(' бонус', 'Бонус')
+      .gsub(' основн', 'Основн')
     unless @ko_god_mode
       text = text.split('<br>')
     else
@@ -207,24 +214,8 @@ class DozorClassic
     text = text.split('<br>').map { |el| 
       el.split('коды: ').each_with_index.map { |el, index|
         if index.odd?
-          @ind = 0
-          el.split(', ').map { |el| 
-            @ind += 1
-            el = @ind.to_s + ') ' + el
-            el = ' ' + el if @ind < 10 && @ind.odd?
-            if @ind.even?
-              el = el + "\n"
-            elsif @ind < 9
-              el = add_space(el, (18 - el.length))
-            elsif @ind >= 9 && @ind < 99
-              if @ind % 3 == 2
-                el = add_space(el, (17 - el.length))
-              else
-                el = add_space(el, (17 - el.length))
-              end
-            else
-              el = add_space(el, (16 - el.length))
-            end
+          el.split(', ').each_with_index.map { |el, index| 
+            el = (index + 1).to_s + ') ' + el + "\n"
           }
         else
           el

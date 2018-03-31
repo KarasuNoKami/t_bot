@@ -42,6 +42,7 @@ class Default
 				when /\d+\.\d+(\,\s+|\s+)\d+\.\d+/
 					send('html', message.text, 'pre')
 					send('cord', message.text[/\d+\.\d+(\,\s+|\s+)\d+\.\d+/])
+
 				end
 			end
 		end
